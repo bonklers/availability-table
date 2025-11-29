@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tracker v0.03</title>
+  <title>Tracker v0.04</title>
   <style>
     body { text-align:center; font-family: Arial; }
     table { border-collapse: collapse; margin:auto; }
@@ -43,6 +43,7 @@ const legendText = {
 
 let showLegend=false;
 let lastLogs={};
+let startTimes={};  // ✅ MEMORY-BASED TIMER STORE
 
 /* ========================== */
 async function api(endpoint,method="GET",body=null){
@@ -74,7 +75,7 @@ function nextColor(color){
 function buildGrid() {
 
   const table = document.getElementById("grid");
-  table.innerHTML = "";   // IMPORTANT: clears table
+  table.innerHTML = "";
 
   let id = 1;
 
@@ -83,7 +84,7 @@ function buildGrid() {
 
     for (let c = 0; c < 4; c++) {
 
-      if (id > 28) break;   // SAFETY GUARD
+      if (id > 28) break;
 
       const td = document.createElement("td");
       td.dataset.id = id;
@@ -116,26 +117,22 @@ function buildGrid() {
 async function loadState() {
 
   const cells = document.querySelectorAll("td");
-  if (cells.length === 0) {
-    console.warn("Table not loaded yet.");
-    return;
-  }
-
   const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
 
   const found = {};
   
-  cells.forEach(cell => {
-    cell.style.backgroundColor = "green";
-  });
+  cells.forEach(cell => cell.style.backgroundColor = "green");
+
+  lastLogs = {};
+  startTimes = {};
 
   rows.forEach(row => {
     const index = row.cell_id - 1;
 
     if (!found[row.cell_id] && cells[index]) {
       cells[index].style.backgroundColor = row.color;
-      cells[index].dataset.start = row.start_time;
       lastLogs[row.cell_id] = row.id;
+      startTimes[row.cell_id] = row.start_time;   // ✅ FIXED
       found[row.cell_id] = true;
     }
   });
@@ -148,33 +145,41 @@ async function changeCell(cellId) {
 
   const cells = document.querySelectorAll("td");
 
-  if (!cells[cellId - 1]) {
-    console.error("CELL NOT FOUND:", cellId);
-    return;
-  }
-
   const cell = cells[cellId - 1];
+  if (!cell) return console.error("CELL MISSING:", cellId);
 
   const current = cell.style.backgroundColor || "green";
   const newColor = nextColor(current);
   const now = new Date().toISOString();
 
+  /* CLOSE PREVIOUS STATE */
   if (lastLogs[cellId]) {
-    const since = new Date(cell.dataset.start);
-    const seconds = Math.floor((Date.now() - since) / 1000);
+
+    if (!startTimes[cellId]) {
+      console.warn("Missing start time for", cellId);
+      return;
+    }
+
+    const since = new Date(startTimes[cellId]);
+    const seconds = Math.max(0, Math.floor((Date.now() - since) / 1000));
 
     await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
       duration_seconds: seconds
     });
   }
 
-  await api("cell_logs", "POST", {
+  /* OPEN NEW STATE */
+  const newRow = await api("cell_logs", "POST", {
     cell_id: cellId,
     color: newColor,
     start_time: now
   });
 
-  await loadState();
+  /* SAVE IMMEDIATELY */
+  lastLogs[cellId] = newRow[0].id;
+  startTimes[cellId] = now;
+
+  cell.style.backgroundColor = newColor;
 }
 
 /* ========================== */
