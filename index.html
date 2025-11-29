@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tracker v1.0</title>
+  <title>Tracker v0.01</title>
   <style>
     body { text-align:center; font-family: Arial; }
     table { border-collapse: collapse; margin:auto; }
@@ -102,21 +102,30 @@ function buildGrid(){
 /* ========================== */
 /* LOAD FROM DATABASE */
 /* ========================== */
-async function loadState(){
-  const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
-  const found={};
+async function loadState() {
 
-  document.querySelectorAll("td").forEach(td=>{
-    td.style.backgroundColor="green";
+  const cells = document.querySelectorAll("td");
+  if (cells.length === 0) {
+    console.warn("Table not loaded yet.");
+    return;
+  }
+
+  const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
+
+  const found = {};
+  
+  cells.forEach(cell => {
+    cell.style.backgroundColor = "green";
   });
 
-  rows.forEach(row=>{
-    if(!found[row.cell_id]){
-      const cell=document.querySelectorAll("td")[row.cell_id-1];
-      cell.style.backgroundColor=row.color;
-      cell.dataset.start=row.start_time;
-      lastLogs[row.cell_id]=row.id;
-      found[row.cell_id]=true;
+  rows.forEach(row => {
+    const index = row.cell_id - 1;
+
+    if (!found[row.cell_id] && cells[index]) {
+      cells[index].style.backgroundColor = row.color;
+      cells[index].dataset.start = row.start_time;
+      lastLogs[row.cell_id] = row.id;
+      found[row.cell_id] = true;
     }
   });
 }
@@ -124,30 +133,36 @@ async function loadState(){
 /* ========================== */
 /* CHANGE CELL */
 /* ========================== */
-async function changeCell(cellId){
-  const cell=document.querySelectorAll("td")[cellId-1];
+async function changeCell(cellId) {
+
+  const cells = document.querySelectorAll("td");
+
+  if (!cells[cellId - 1]) {
+    console.error("CELL NOT FOUND:", cellId);
+    return;
+  }
+
+  const cell = cells[cellId - 1];
+
   const current = cell.style.backgroundColor || "green";
   const newColor = nextColor(current);
-  const now=new Date().toISOString();
+  const now = new Date().toISOString();
 
-  /* CLOSE PREVIOUS RECORD */
-  if(lastLogs[cellId]){
+  if (lastLogs[cellId]) {
     const since = new Date(cell.dataset.start);
-    const seconds = Math.floor((Date.now()-since)/1000);
+    const seconds = Math.floor((Date.now() - since) / 1000);
 
-    await api(`cell_logs?id=eq.${lastLogs[cellId]}`,"PATCH",{
-      duration_seconds:seconds
+    await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
+      duration_seconds: seconds
     });
   }
 
-  /* INSERT NEW STATE */
-  await api("cell_logs","POST",{
-    cell_id:cellId,
-    color:newColor,
-    start_time:now
+  await api("cell_logs", "POST", {
+    cell_id: cellId,
+    color: newColor,
+    start_time: now
   });
 
-  /* RELOAD CONFIRMED STATE FROM DB */
   await loadState();
 }
 
