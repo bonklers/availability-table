@@ -1,10 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard v0.02</title>
+  <style>
+    body { text-align:center; font-family: Arial; }
+    table { margin:auto; border-collapse: collapse; }
+    td {
+      width: 80px;
+      height: 80px;
+      border: 1px solid black;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+    button, input {
+      margin: 10px;
+      padding: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<input type="date" id="datePicker">
+
+<button id="toggleBtn" onclick="toggleFilter()">&lt; 10 min</button>
+
+<table id="grid"></table>
+
 <script>
+/* ===================== */
+/* SUPABASE SETTINGS */
+/* ===================== */
 const SUPABASE_URL = "https://thfrvjwkqesmisyzhfji.supabase.co";
-const SUPABASE_KEY = "YOUR_KEY_HERE";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
 
+/* ===================== */
 const rows = 7, cols = 4;
-let showShort = false;   // FALSE = >10 min, TRUE = <10 min
+let showShort = true;   // true = <10 min, false = >10 min
 
+/* ===================== */
 async function api(endpoint){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
     headers:{
@@ -15,6 +52,7 @@ async function api(endpoint){
   return await res.json();
 }
 
+/* ===================== */
 function buildGrid(){
   const table=document.getElementById("grid");
   table.innerHTML="";
@@ -32,31 +70,33 @@ function buildGrid(){
   }
 }
 
+/* ===================== */
 function toggleFilter(){
   showShort = !showShort;
-  document.getElementById("toggleBtn").innerText = showShort ? "> 10 min" : "< 10 min";
+  document.getElementById("toggleBtn").innerText = showShort ? "< 10 min" : "> 10 min";
   queryData();
 }
 
+/* ===================== */
 function getDayBounds(date){
-  const start=new Date(date);
+  const start = new Date(date);
   start.setHours(0,0,0,0);
-  const end=new Date(start);
+
+  const end = new Date(start);
   end.setDate(end.getDate()+1);
 
-  return {
-    from:start.toISOString(),
-    to:end.toISOString()
-  }
+  return { from:start.toISOString(), to:end.toISOString() };
 }
 
+/* ===================== */
 async function queryData(){
-  const date=document.getElementById("datePicker").value;
-  const bounds=getDayBounds(date);
+  const date = document.getElementById("datePicker").value;
+  if (!date) return;
 
-  // ✅ CORRECT FILTER
-  const operator = showShort ? "lt" : "gte";     
-  const seconds = 600;
+  const bounds = getDayBounds(date);
+
+  const operator = showShort ? "lt" : "gte";
+  const seconds = 600; // 10 minutes
 
   const rows = await api(
     `cell_logs?select=cell_id,duration_seconds&color=eq.red` +
@@ -65,7 +105,7 @@ async function queryData(){
     `&duration_seconds=${operator}.${seconds}`
   );
 
-  const counts={};
+  const counts = {};
   for(let i=1;i<=28;i++) counts[i]=0;
 
   rows.forEach(r => counts[r.cell_id]++);
@@ -75,14 +115,18 @@ async function queryData(){
   }
 }
 
+/* ===================== */
 function init(){
   buildGrid();
-  const today=new Date().toISOString().split("T")[0];
-  const picker=document.getElementById("datePicker");
-  picker.value=today;
-  picker.onchange=queryData;
+  const today = new Date().toISOString().split("T")[0];
+  const picker = document.getElementById("datePicker");
+  picker.value = today;
+  picker.onchange = queryData;
   queryData();
 }
 
 init();
 </script>
+
+</body>
+</html>
