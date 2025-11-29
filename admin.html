@@ -90,25 +90,28 @@ function getDayBounds(date){
 
 /* ===================== */
 async function queryData(){
+
   const date = document.getElementById("datePicker").value;
   if (!date) return;
 
   const bounds = getDayBounds(date);
 
-  const operator = showShort ? "lt" : "gte";
-  const seconds = 600; // 10 minutes
+  // ✅ Correct filter
+  const durationFilter = showShort ? "lt.600" : "gte.600";
 
   const rows = await api(
     `cell_logs?select=cell_id,duration_seconds&color=eq.red` +
     `&start_time=gte.${bounds.from}` +
     `&start_time=lt.${bounds.to}` +
-    `&duration_seconds=${operator}.${seconds}`
+    `&duration_seconds=${durationFilter}`
   );
 
   const counts = {};
-  for(let i=1;i<=28;i++) counts[i]=0;
+  for(let i=1;i<=28;i++) counts[i] = 0;
 
-  rows.forEach(r => counts[r.cell_id]++);
+  rows.forEach(r => {
+    counts[r.cell_id]++;
+  });
 
   for(let i=1;i<=28;i++){
     document.getElementById("c"+i).innerText = counts[i];
