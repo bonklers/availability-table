@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard v0.04</title>
+  <title>Admin Dashboard v0.05</title>
   <style>
     body { text-align:center; font-family: Arial; }
     table { margin:auto; border-collapse: collapse; }
@@ -22,11 +22,11 @@
 </head>
 <body>
 
-<h2>Admin Dashboard</h2>
+<h2 id="title">Ocupado más de 10 minutos</h2>
 
 <input type="date" id="datePicker">
 
-<button id="toggleBtn" onclick="toggleFilter()">&lt; 10 min</button>
+<button id="toggleBtn" onclick="toggleFilter()">Mostrar menos de 10 min</button>
 
 <table id="grid"></table>
 
@@ -35,11 +35,11 @@
 /* SUPABASE SETTINGS */
 /* ===================== */
 const SUPABASE_URL = "https://thfrvjwkqesmisyzhfji.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
 
 /* ===================== */
 const rows = 7, cols = 4;
-let showShort = true;   // true = <10 min, false = >10 min
+let showShort = false;   // ✅ DEFAULT = SHOW >= 10 MIN
 
 /* ===================== */
 async function api(endpoint){
@@ -54,14 +54,14 @@ async function api(endpoint){
 
 /* ===================== */
 function buildGrid(){
-  const table=document.getElementById("grid");
-  table.innerHTML="";
-  let id=1;
+  const table = document.getElementById("grid");
+  table.innerHTML = "";
+  let id = 1;
 
-  for(let r=0;r<rows;r++){
-    let tr=document.createElement("tr");
-    for(let c=0;c<cols;c++){
-      let td=document.createElement("td");
+  for(let r = 0; r < rows; r++){
+    let tr = document.createElement("tr");
+    for(let c = 0; c < cols; c++){
+      let td = document.createElement("td");
       td.innerHTML = `<div>${id}</div><div id="c${id}">0</div>`;
       tr.appendChild(td);
       id++;
@@ -73,7 +73,15 @@ function buildGrid(){
 /* ===================== */
 function toggleFilter(){
   showShort = !showShort;
-  document.getElementById("toggleBtn").innerText = showShort ? "< 10 min" : "> 10 min";
+
+  document.getElementById("toggleBtn").innerText = showShort 
+    ? "Mostrar más de 10 minutos" 
+    : "Mostrar menos de 10 min";
+
+  document.getElementById("title").innerText = showShort
+    ? "Ocupado menos de 10 minutos"
+    : "Ocupado más de 10 minutos";
+
   queryData();
 }
 
@@ -93,7 +101,7 @@ async function queryData(){
 
   const bounds = getDayBounds(date);
 
-  // ✅ Correct filter
+  // ✅ CORRECT filter logic
   const durationFilter = showShort ? "lt.600" : "gte.600";
 
   const rows = await api(
@@ -104,25 +112,27 @@ async function queryData(){
   );
 
   const counts = {};
-  for(let i=1;i<=28;i++) counts[i] = 0;
+  for (let i = 1; i <= 28; i++) counts[i] = 0;
 
   rows.forEach(r => {
     counts[r.cell_id]++;
   });
 
-  for(let i=1;i<=28;i++){
-    document.getElementById("c"+i).innerText = counts[i];
+  for (let i = 1; i <= 28; i++) {
+    document.getElementById("c" + i).innerText = counts[i];
   }
 }
 
 /* ===================== */
 function init(){
   buildGrid();
+
   const today = new Date().toISOString().split("T")[0];
   const picker = document.getElementById("datePicker");
   picker.value = today;
   picker.onchange = queryData;
-  queryData();
+
+  queryData();   // load default (>=10 minutes)
 }
 
 init();
