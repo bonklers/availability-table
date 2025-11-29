@@ -1,18 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cell State Tracker</title>
+  <title>Cell Tracker</title>
   <style>
-    body {
-      text-align: center;
-      font-family: Arial;
-    }
-
-    table {
-      border-collapse: collapse;
-      margin: 20px auto;
-    }
-
+    body { text-align:center; font-family: Arial; }
+    table { border-collapse: collapse; margin:auto; }
     td {
       width: 70px;
       height: 70px;
@@ -21,192 +13,147 @@
       vertical-align: middle;
       font-weight: bold;
     }
-
-    .desc {
-      display: none;
-      font-size: 11px;
-      color: black;
-    }
-
-    button {
-      padding: 8px 15px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
+    .desc { display:none; font-size:11px; }
+    button { margin:10px; padding:8px; }
   </style>
 </head>
 <body>
 
 <button onclick="toggleLegend()">Legend</button>
-
 <table id="grid"></table>
 
 <script>
-/* ======================= */
+/* ========================== */
 /* SUPABASE CONFIG */
-/* ======================= */
+/* ========================== */
 const SUPABASE_URL = "https://thfrvjwkqesmisyzhfji.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
 
-/* ======================= */
-/* GRID SETTINGS */
-/* ======================= */
-const rows = 7;
-const cols = 4;
+/* ========================== */
+const rows = 7, cols = 4;
 const colors = ["green", "red", "yellow"];
-
-/* ======================= */
-/* LEGEND DESCRIPTIONS */
-/* ======================= */
 const legendText = {
-  1: "one", 2: "two", 3: "three", 4: "four",
-  5: "five", 6: "six", 7: "seven", 8: "eight",
-  9: "nine", 10: "ten", 11: "eleven", 12: "twelve",
-  13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen",
-  17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty",
-  21: "twenty-one", 22: "twenty-two", 23: "twenty-three", 24: "twenty-four",
-  25: "twenty-five", 26: "twenty-six", 27: "twenty-seven", 28: "twenty-eight"
+  1:"one",2:"two",3:"three",4:"four",5:"five",6:"six",7:"seven",
+  8:"eight",9:"nine",10:"ten",11:"eleven",12:"twelve",13:"thirteen",
+  14:"fourteen",15:"fifteen",16:"sixteen",17:"seventeen",18:"eighteen",
+  19:"nineteen",20:"twenty",21:"twenty-one",22:"twenty-two",
+  23:"twenty-three",24:"twenty-four",25:"twenty-five",
+  26:"twenty-six",27:"twenty-seven",28:"twenty-eight"
 };
 
-let showLegend = false;
-let currentColor = {};
-let lastLogId = {};
+let showLegend=false;
+let lastLogs={};
 
-/* ======================= */
-/* SUPABASE REQUEST */
-/* ======================= */
-async function supabase(endpoint, method="GET", body=null) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+/* ========================== */
+async function api(endpoint,method="GET",body=null){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`,{
     method,
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": "Bearer " + SUPABASE_KEY,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
+    headers:{
+      apikey:SUPABASE_KEY,
+      Authorization:`Bearer ${SUPABASE_KEY}`,
+      "Content-Type":"application/json",
+      Prefer:"return=representation"
     },
-    body: body ? JSON.stringify(body) : null
+    body: body?JSON.stringify(body):null
   });
   return await res.json();
 }
 
-/* ======================= */
-/* LEGEND TOGGLE */
-/* ======================= */
-function toggleLegend() {
-  showLegend = !showLegend;
-  document.querySelectorAll(".desc").forEach(d => {
-    d.style.display = showLegend ? "block" : "none";
-  });
+/* ========================== */
+function toggleLegend(){
+  showLegend=!showLegend;
+  document.querySelectorAll(".desc").forEach(d=>d.style.display=showLegend?"block":"none");
 }
 
-/* ======================= */
-/* COLOR CYCLE */
-/* ======================= */
-function nextColor(color) {
-  return colors[(colors.indexOf(color) + 1) % colors.length];
+/* ========================== */
+function nextColor(color){
+  return colors[(colors.indexOf(color)+1)%colors.length];
 }
 
-/* ======================= */
-/* BUILD GRID */
-/* ======================= */
-function buildGrid() {
-  const table = document.getElementById("grid");
-  let id = 1;
+/* ========================== */
+function buildGrid(){
+  let table=document.getElementById("grid");
+  let id=1;
 
-  for (let r = 0; r < rows; r++) {
-    const tr = document.createElement("tr");
+  for(let r=0;r<rows;r++){
+    let tr=document.createElement("tr");
+    for(let c=0;c<cols;c++){
+      let td=document.createElement("td");
 
-    for (let c = 0; c < cols; c++) {
-      const td = document.createElement("td");
+      let num=document.createElement("div");
+      num.innerText=id;
 
-      const idDiv = document.createElement("div");
-      idDiv.innerText = id;
+      let desc=document.createElement("div");
+      desc.className="desc";
+      desc.innerText=legendText[id];
 
-      const descDiv = document.createElement("div");
-      descDiv.className = "desc";
-      descDiv.innerText = legendText[id];
+      td.appendChild(num);
+      td.appendChild(desc);
+      td.dataset.id=id;
 
-      td.appendChild(idDiv);
-      td.appendChild(descDiv);
-
-      td.onclick = () => toggleCell(id, td);
-
-      currentColor[id] = "green";
-      td.style.backgroundColor = "green";
-      lastLogId[id] = null;
-
-      td.dataset.startTime = new Date().toISOString();
+      td.onclick=()=>changeCell(id);
       tr.appendChild(td);
-
       id++;
     }
-
     table.appendChild(tr);
   }
 }
 
-/* ======================= */
-/* LOAD LAST STATES */
-/* ======================= */
-async function loadLastStates() {
-  const data = await supabase(
-    "cell_logs?select=cell_id,color,start_time,id&order=start_time.desc"
-  );
+/* ========================== */
+/* LOAD FROM DATABASE */
+/* ========================== */
+async function loadState(){
+  const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
+  const found={};
 
-  const seen = {};
+  document.querySelectorAll("td").forEach(td=>{
+    td.style.backgroundColor="green";
+  });
 
-  data.forEach(row => {
-    if (!seen[row.cell_id]) {
-      const cell = document.querySelectorAll("td")[row.cell_id - 1];
-      cell.style.backgroundColor = row.color;
-      currentColor[row.cell_id] = row.color;
-      lastLogId[row.cell_id] = row.id;
-      cell.dataset.startTime = row.start_time;
-      seen[row.cell_id] = true;
+  rows.forEach(row=>{
+    if(!found[row.cell_id]){
+      const cell=document.querySelectorAll("td")[row.cell_id-1];
+      cell.style.backgroundColor=row.color;
+      cell.dataset.start=row.start_time;
+      lastLogs[row.cell_id]=row.id;
+      found[row.cell_id]=true;
     }
   });
 }
 
-/* ======================= */
-/* TOGGLE CELL */
-/* ======================= */
-async function toggleCell(cellId, cell) {
-  const now = new Date().toISOString();
-  const color = currentColor[cellId];
-  const next = nextColor(color);
-  const lastId = lastLogId[cellId];
+/* ========================== */
+/* CHANGE CELL */
+/* ========================== */
+async function changeCell(cellId){
+  const cell=document.querySelectorAll("td")[cellId-1];
+  const current = cell.style.backgroundColor || "green";
+  const newColor = nextColor(current);
+  const now=new Date().toISOString();
 
-  /* CLOSE PREVIOUS STATE */
-  if (lastId) {
-    const started = new Date(cell.dataset.startTime);
-    const duration = Math.floor((Date.now() - started) / 1000);
+  /* CLOSE PREVIOUS RECORD */
+  if(lastLogs[cellId]){
+    const since = new Date(cell.dataset.start);
+    const seconds = Math.floor((Date.now()-since)/1000);
 
-    await supabase(
-      `cell_logs?id=eq.${lastId}`,
-      "PATCH",
-      { duration_seconds: duration }
-    );
+    await api(`cell_logs?id=eq.${lastLogs[cellId]}`,"PATCH",{
+      duration_seconds:seconds
+    });
   }
 
   /* INSERT NEW STATE */
-  const result = await supabase("cell_logs", "POST", {
-    cell_id: cellId,
-    color: next,
-    start_time: now
+  await api("cell_logs","POST",{
+    cell_id:cellId,
+    color:newColor,
+    start_time:now
   });
 
-  lastLogId[cellId] = result[0].id;
-  currentColor[cellId] = next;
-  cell.style.backgroundColor = next;
-  cell.dataset.startTime = now;
+  /* RELOAD CONFIRMED STATE FROM DB */
+  await loadState();
 }
 
-/* ======================= */
-/* INIT */
-/* ======================= */
+/* ========================== */
 buildGrid();
-loadLastStates();
+loadState();
 </script>
 
 </body>
