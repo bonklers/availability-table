@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard v0.03</title>
+  <title>Admin Dashboard v0.04</title>
   <style>
     body { text-align:center; font-family: Arial; }
     table { margin:auto; border-collapse: collapse; }
@@ -78,14 +78,11 @@ function toggleFilter(){
 }
 
 /* ===================== */
-function getDayBounds(date){
-  const start = new Date(date);
-  start.setHours(0,0,0,0);
-
-  const end = new Date(start);
-  end.setDate(end.getDate()+1);
-
-  return { from:start.toISOString(), to:end.toISOString() };
+function getDayBounds(dateStr){
+  return {
+    from: `${dateStr}T00:00:00.000Z`,
+    to: `${dateStr}T23:59:59.999Z`
+  };
 }
 
 /* ===================== */
