@@ -1,59 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Viewer v0.01</title>
-  <style>
-    body { text-align:center; font-family: Arial; }
-    table { border-collapse: collapse; margin:auto; }
-    td {
-      width: 70px;
-      height: 70px;
-      border: 1px solid black;
-      cursor: default;
-      vertical-align: middle;
-      font-weight: bold;
-    }
-    .desc { display:none; font-size:11px; }
-    button { margin:10px; padding:8px; }
-  </style>
+<title>Viewer v0.02</title>
+<style>
+body { text-align:center; font-family: Arial; }
+table { margin:auto; border-collapse: collapse; }
+td {
+  width: 70px;
+  height: 70px;
+  border: 1px solid black;
+  font-weight:bold;
+}
+.desc { display:none; font-size:11px; }
+button { margin:10px; padding:8px; }
+</style>
 </head>
 <body>
 
 <button onclick="toggleLegend()">Legend</button>
 <table id="grid"></table>
 
+<script src="shared.js"></script>
 <script>
-/* ========================== */
-/* SUPABASE CONFIG */
-/* ========================== */
-const SUPABASE_URL = "https://thfrvjwkqesmisyzhfji.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
-
-/* ========================== */
-const rows = 7, cols = 4;
-const legendText = {
-  1:"one",2:"two",3:"three",4:"four",5:"five",6:"six",7:"seven",
-  8:"eight",9:"nine",10:"ten",11:"eleven",12:"twelve",13:"thirteen",
-  14:"fourteen",15:"fifteen",16:"sixteen",17:"seventeen",18:"eighteen",
-  19:"nineteen",20:"twenty",21:"twenty-one",22:"twenty-two",
-  23:"twenty-three",24:"twenty-four",25:"twenty-five",
-  26:"twenty-six",27:"twenty-seven",28:"twenty-eight"
-};
 
 let showLegend=false;
 
-/* ========================== */
-async function api(endpoint){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`,{
-    headers:{
-      apikey:SUPABASE_KEY,
-      Authorization:`Bearer ${SUPABASE_KEY}`
-    }
-  });
-  return await res.json();
-}
-
-/* ========================== */
 function toggleLegend(){
   showLegend = !showLegend;
   document.querySelectorAll(".desc").forEach(d=>{
@@ -61,30 +32,18 @@ function toggleLegend(){
   });
 }
 
-/* ========================== */
-function buildGrid() {
+function buildGrid(){
   const table = document.getElementById("grid");
   table.innerHTML="";
+  let id=1;
 
-  let id = 1;
-
-  for(let r=0;r<7;r++){
-    const tr=document.createElement("tr");
-
-    for(let c=0;c<4;c++){
-      if(id>28) break;
-
-      const td=document.createElement("td");
-
-      const num=document.createElement("div");
-      num.innerText=id;
-
-      const desc=document.createElement("div");
-      desc.className="desc";
-      desc.innerText=legendText[id]||"";
-
-      td.appendChild(num);
-      td.appendChild(desc);
+  for(let r=0;r<GRID_ROWS;r++){
+    let tr=document.createElement("tr");
+    for(let c=0;c<GRID_COLS;c++){
+      if(id > TOTAL_CELLS) break;
+      let td=document.createElement("td");
+      td.innerHTML=`<div>${id}</div><div class="desc">${LEGEND_TEXT[id]}</div>`;
+      td.dataset.id=id;
       tr.appendChild(td);
       id++;
     }
@@ -92,39 +51,24 @@ function buildGrid() {
   }
 }
 
-/* ========================== */
-/* LOAD COLORS */
-/* ========================== */
 async function loadState(){
-
-  const cells = document.querySelectorAll("td");
   const rows = await api("cell_logs?select=cell_id,color,start_time&order=start_time.desc");
+  const cells = document.querySelectorAll("td");
+  cells.forEach(c=>c.style.backgroundColor="green");
+  let found={};
 
-  const found = {};
-
-  // default green
-  cells.forEach(cell=>{
-    cell.style.backgroundColor="green";
-  });
-
-  // apply latest per cell
-  rows.forEach(row=>{
-    const index = row.cell_id - 1;
-
-    if(!found[row.cell_id] && cells[index]){
-      cells[index].style.backgroundColor = row.color;
-      found[row.cell_id] = true;
+  rows.forEach(r=>{
+    const idx=r.cell_id-1;
+    if(!found[r.cell_id] && cells[idx]){
+      cells[idx].style.backgroundColor=r.color;
+      found[r.cell_id]=true;
     }
   });
 }
 
-/* ========================== */
 buildGrid();
 loadState();
-
-/* OPTIONAL AUTO REFRESH EVERY 10 SECONDS */
-// setInterval(loadState, 10000);
-
+setInterval(loadState, 5000);
 </script>
 
 </body>

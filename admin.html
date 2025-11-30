@@ -1,67 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard v0.06</title>
-  <style>
-    body { text-align:center; font-family: Arial; }
-    table { margin:auto; border-collapse: collapse; }
-    td {
-      width: 80px;
-      height: 80px;
-      border: 1px solid black;
-      font-weight: bold;
-      vertical-align: middle;
-    }
-    button, input {
-      margin: 10px;
-      padding: 8px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-  </style>
+<title>Admin v0.07</title>
+<style>
+body { text-align:center; font-family: Arial; }
+table { margin:auto; border-collapse: collapse; }
+td {
+  width: 80px;
+  height: 80px;
+  border: 1px solid black;
+  font-weight: bold;
+}
+button, input { margin:10px; padding:8px; }
+</style>
 </head>
 <body>
 
-<h2 id="title">Ocupado más de 10 minutos</h2>
-
+<h2 id="title">Occupied more than 10 minutes</h2>
 <input type="date" id="datePicker">
-
-<button id="toggleBtn" onclick="toggleFilter()">Mostrar menos de 10 min</button>
+<button id="toggleBtn" onclick="toggleFilter()">Show under 10 min</button>
 
 <table id="grid"></table>
 
+<script src="shared.js"></script>
 <script>
-/* ===================== */
-/* SUPABASE SETTINGS */
-/* ===================== */
-const SUPABASE_URL = "https://thfrvjwkqesmisyzhfji.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZnJ2andrcWVzbWlzeXpoZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA2MjksImV4cCI6MjA3OTk0NjYyOX0.lid5S9n4OX2O7IjkO5JFIPBT9mXSIuEMyqt1SCCBECg";
 
-/* ===================== */
-const rows = 7, cols = 4;
-let showShort = false;   // ✅ DEFAULT = SHOW >= 10 MIN
+let showShort = false;
 
-/* ===================== */
-async function api(endpoint){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
-    headers:{
-      apikey: SUPABASE_KEY,
-      Authorization:`Bearer ${SUPABASE_KEY}`
-    }
-  });
-  return await res.json();
-}
-
-/* ===================== */
 function buildGrid(){
-  const table = document.getElementById("grid");
-  table.innerHTML = "";
-  let id = 1;
-
-  for(let r = 0; r < rows; r++){
-    let tr = document.createElement("tr");
-    for(let c = 0; c < cols; c++){
-      let td = document.createElement("td");
+  const table=document.getElementById("grid");
+  table.innerHTML="";
+  let id=1;
+  for(let r=0;r<GRID_ROWS;r++){
+    let tr=document.createElement("tr");
+    for(let c=0;c<GRID_COLS;c++){
+      let td=document.createElement("td");
       td.innerHTML = `<div>${id}</div><div id="c${id}">0</div>`;
       tr.appendChild(td);
       id++;
@@ -70,38 +43,22 @@ function buildGrid(){
   }
 }
 
-/* ===================== */
 function toggleFilter(){
-  showShort = !showShort;
+  showShort=!showShort;
+  document.getElementById("toggleBtn").innerText = showShort ? 
+    "Show 10+ minutes" : "Show under 10 min";
 
-  document.getElementById("toggleBtn").innerText = showShort 
-    ? "Mostrar más de 10 minutos" 
-    : "Mostrar menos de 10 min";
-
-  document.getElementById("title").innerText = showShort
-    ? "Ocupado menos de 10 minutos"
-    : "Ocupado más de 10 minutos";
+  document.getElementById("title").innerText = showShort ?
+    "Occupied under 10 minutes" : "Occupied more than 10 minutes";
 
   queryData();
 }
 
-/* ===================== */
-function getDayBounds(dateStr){
-  return {
-    from: `${dateStr}T00:00:00.000Z`,
-    to: `${dateStr}T23:59:59.999Z`
-  };
-}
-
-/* ===================== */
 async function queryData(){
-
-  const date = document.getElementById("datePicker").value;
-  if (!date) return;
+  const date=document.getElementById("datePicker").value;
+  if(!date) return;
 
   const bounds = getDayBounds(date);
-
-  // ✅ CORRECT filter logic
   const durationFilter = showShort ? "lt.600" : "gte.600";
 
   const rows = await api(
@@ -111,31 +68,22 @@ async function queryData(){
     `&duration_seconds=${durationFilter}`
   );
 
-  const counts = {};
-  for (let i = 1; i <= 28; i++) counts[i] = 0;
+  let counts={};
+  for(let i=1;i<=TOTAL_CELLS;i++) counts[i]=0;
+  rows.forEach(r=>counts[r.cell_id]++);
 
-  rows.forEach(r => {
-    counts[r.cell_id]++;
-  });
-
-  for (let i = 1; i <= 28; i++) {
-    document.getElementById("c" + i).innerText = counts[i];
+  for(let i=1;i<=TOTAL_CELLS;i++){
+    document.getElementById("c"+i).innerText = counts[i];
   }
 }
 
-/* ===================== */
-function init(){
+(function init(){
   buildGrid();
-
-  const today = new Date().toISOString().split("T")[0];
-  const picker = document.getElementById("datePicker");
-  picker.value = today;
-  picker.onchange = queryData;
-
-  queryData();   // load default (>=10 minutes)
-}
-
-init();
+  const today=new Date().toISOString().split("T")[0];
+  datePicker.value=today;
+  datePicker.onchange=queryData;
+  queryData();
+})();
 </script>
 
 </body>
