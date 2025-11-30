@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tracker v0.04</title>
+  <title>Tracker v0.05</title>
   <style>
     body { text-align:center; font-family: Arial; }
     table { border-collapse: collapse; margin:auto; }
@@ -43,7 +43,7 @@ const legendText = {
 
 let showLegend=false;
 let lastLogs={};
-let startTimes={};  // ✅ MEMORY-BASED TIMER STORE
+let startTimes={};  
 
 /* ========================== */
 async function api(endpoint,method="GET",body=null){
@@ -132,7 +132,10 @@ async function loadState() {
     if (!found[row.cell_id] && cells[index]) {
       cells[index].style.backgroundColor = row.color;
       lastLogs[row.cell_id] = row.id;
-      startTimes[row.cell_id] = row.start_time;   // ✅ FIXED
+
+      // ✅ Enforce safe ISO UTC time formatting
+      startTimes[row.cell_id] = row.start_time.replace(" ", "T") + "Z";
+
       found[row.cell_id] = true;
     }
   });
@@ -160,8 +163,18 @@ async function changeCell(cellId) {
       return;
     }
 
-    const since = new Date(startTimes[cellId]);
-    const seconds = Math.max(0, Math.floor((Date.now() - since) / 1000));
+    // ✅ Force UTC parse
+    const since = new Date(startTimes[cellId] + "Z");
+
+    // ✅ Hard safety
+    if (isNaN(since.getTime())) {
+      console.error("Invalid timestamp:", startTimes[cellId]);
+      return;
+    }
+
+    const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
+
+    console.log("Closing:", cellId, "Duration:", seconds);
 
     await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
       duration_seconds: seconds
