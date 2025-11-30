@@ -1,75 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Viewer v0.02</title>
+<meta charset="UTF-8">
+<title>Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body { text-align:center; font-family: Arial; }
+body { font-family: Arial, sans-serif; text-align:center; }
 table { margin:auto; border-collapse: collapse; }
 td {
-  width: 70px;
-  height: 70px;
-  border: 1px solid black;
-  font-weight:bold;
+  width:90px;
+  height:80px;
+  border:1px solid black;
+  text-align:center;
+  vertical-align:middle;
 }
-.desc { display:none; font-size:11px; }
-button { margin:10px; padding:8px; }
+.desc { font-size:12px; }
+.green { background:#9aff9a; }
+.red { background:#ff9a9a; }
+.yellow { background:#ffff9a; }
 </style>
 </head>
-<body>
 
-<button onclick="toggleLegend()">Legend</button>
+<body>
+<h2>Live Viewer</h2>
+
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
 
-let showLegend=false;
+const today = new Date().toISOString().slice(0,10);
 
-function toggleLegend(){
-  showLegend = !showLegend;
-  document.querySelectorAll(".desc").forEach(d=>{
-    d.style.display = showLegend ? "block" : "none";
-  });
+function getIdCellMap(){
+  return [...document.querySelectorAll("#grid td")]
+         .reduce((m,td)=> (m[td.dataset.id]=td,m),{});
 }
 
-function buildGrid(){
-  const table = document.getElementById("grid");
-  table.innerHTML="";
-  let id=1;
-
-  for(let r=0;r<GRID_ROWS;r++){
-    let tr=document.createElement("tr");
-    for(let c=0;c<GRID_COLS;c++){
-      if(id > TOTAL_CELLS) break;
-      let td=document.createElement("td");
-      td.innerHTML=`<div>${id}</div><div class="desc">${LEGEND_TEXT[id]}</div>`;
-      td.dataset.id=id;
-      tr.appendChild(td);
-      id++;
-    }
-    table.appendChild(tr);
-  }
-}
-
+/* ========================== */
+/* LOAD STATE */
+/* ========================== */
 async function loadState(){
-  const rows = await api("cell_logs?select=cell_id,color,start_time&order=start_time.desc");
-  const cells = document.querySelectorAll("td");
-  cells.forEach(c=>c.style.backgroundColor="green");
-  let found={};
 
-  rows.forEach(r=>{
-    const idx=r.cell_id-1;
-    if(!found[r.cell_id] && cells[idx]){
-      cells[idx].style.backgroundColor=r.color;
-      found[r.cell_id]=true;
+  const {from,to} = getDayBounds(today);
+  const data = await api(`tracker?changed_at=gte.${from}&changed_at=lte.${to}&order=changed_at.asc`);
+
+  const map = getIdCellMap();
+
+  data.forEach(r=>{
+    const cell = map[r.cell_id];
+    if(cell){
+      cell.dataset.color = r.color;
+      cell.className = r.color;
     }
   });
 }
 
-buildGrid();
+/* ========================== */
+/* INIT */
+/* ========================== */
+buildGrid("grid", false);
 loadState();
 setInterval(loadState, 5000);
-</script>
 
+</script>
 </body>
 </html>

@@ -22,18 +22,18 @@ const LEGEND_TEXT = {
 };
 
 /* ========================== */
-/* API HELPER */
+/* API */
 /* ========================== */
-async function api(endpoint, method = "GET", body = null){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+async function api(endpoint, method="GET", body=null){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`,{
     method,
     headers:{
-      apikey: SUPABASE_KEY,
+      apikey:SUPABASE_KEY,
       Authorization:`Bearer ${SUPABASE_KEY}`,
       "Content-Type":"application/json",
       Prefer:"return=representation"
     },
-    body: body ? JSON.stringify(body) : null
+    body: body?JSON.stringify(body):null
   });
   return await res.json();
 }
@@ -42,16 +42,58 @@ async function api(endpoint, method = "GET", body = null){
 /* UTILITIES */
 /* ========================== */
 function nextColor(color){
-  return COLORS[(COLORS.indexOf(color) + 1) % COLORS.length];
+  return COLORS[(COLORS.indexOf(color)+1) % COLORS.length];
 }
 
-function safeUtc(iso){
-  return iso.includes("Z") ? iso : iso + "Z";
+function safeUtc(ts){
+  return ts.includes("Z") ? ts : ts + "Z";
 }
 
 function getDayBounds(dateStr){
   return {
     from: `${dateStr}T00:00:00.000Z`,
-    to: `${dateStr}T23:59:59.999Z`
+    to:   `${dateStr}T23:59:59.999Z`
   };
+}
+
+/* ========================== */
+/* UNIVERSAL GRID BUILDER */
+/* ========================== */
+function buildGrid(containerId = "grid", enableClicks = false){
+
+  const table = document.getElementById(containerId);
+  if(!table){
+    console.error("Grid container missing:", containerId);
+    return;
+  }
+
+  table.innerHTML = "";
+  let id = 1;
+
+  for(let r=0; r<GRID_ROWS; r++){
+    const tr = document.createElement("tr");
+
+    for(let c=0; c<GRID_COLS; c++){
+      if(id > TOTAL_CELLS) break;
+
+      const td = document.createElement("td");
+      td.dataset.id = id;
+
+      td.innerHTML = `
+        <div>${id}</div>
+        <div class="desc">${LEGEND_TEXT[id]}</div>
+      `;
+
+      if(enableClicks){
+        const cellId = id;               // ✅ closure safe
+        td.style.cursor = "pointer";
+        td.onclick = () => changeCell(cellId);
+      }
+
+      tr.appendChild(td);
+      id++;
+    }
+
+    table.appendChild(tr);
+  }
 }
