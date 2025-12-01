@@ -1,7 +1,7 @@
 /* =======================
    GLOBAL VERSION STRING
 ======================= */
-const VERSION = "v0.17";
+const VERSION = "v0.18";
 
 /* =======================
    APPLY VERSION TO TITLE

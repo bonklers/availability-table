@@ -22,10 +22,10 @@ button, input {
 </head>
 <body>
 
-<h2 id="title">Ocupados mas de 10 minutos</h2>
+<h2 id="title"></h2>
 
 <input type="date" id="datePicker">
-<button id="toggleBtn">Mostrar menos de 10 minutes</button>
+<button id="toggleBtn">Mostrar menos de 10 minutos</button>
 
 <table id="grid"></table>
 
@@ -40,18 +40,26 @@ let showShort = false;
 buildGrid("grid", false, "admin");
 
 /* ======================== */
+
+function setTitle(total = 0){
+
+  if (showShort) {
+    title.innerHTML = `Ocupados <span style="color:red">menos</span> de 10 minutos TOTAL ${total}`;
+  }
+  else {
+    title.innerHTML = `Ocupados mas de 10 minutos TOTAL ${total}`;
+  }
+}
+
 function toggleFilter(){
 
   showShort = !showShort;
 
   toggleBtn.innerText = showShort
-    ? "Mostrar mas de 10 minutes"
-    : "Mostrar menos de 10 minutes";
+    ? "Mostrar mas de 10 minutos"
+    : "Mostrar menos de 10 minutos";
 
-  title.innerText = showShort
-    ? "Ocupados menos de 10 minutos"
-    : "Ocupados mas de 10 minutos";
-
+  setTitle();
   queryData();
 }
 
@@ -88,10 +96,17 @@ async function queryData(){
       count[r.cell_id]++;
   });
 
+  let total = 0;
+
   for(let i=1;i<=28;i++){
     const el = document.getElementById("c"+i);
-    if(el) el.innerText = count[i];
+    if(el){
+      el.innerText = count[i];
+      total += count[i];
+    }
   }
+
+  setTitle(total);
 }
 
 /* ======================== */
@@ -102,6 +117,7 @@ function init(){
   datePicker.addEventListener("change", queryData);
 
   datePicker.value = getLocalDate();
+  setTitle(0);
   queryData();
 }
 
