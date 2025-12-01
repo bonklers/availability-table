@@ -77,7 +77,7 @@ async function loadState(){
 }
 
 function getUtcNow() {
-  return new Date().toISOString();
+  return new Date(Date.now()).toISOString();
 }
 
 /* ======================== */
@@ -90,13 +90,13 @@ async function changeCell(cellId){
   if (!cell) return;
 
   const next = nextColor(cell.dataset.color || "green");
+  const end = getUtcNow();
 
   /* CLOSE PREVIOUS STATE */
   if (lastLogs[cellId]) {
 
-    const end = getUtcNow();
     const since = new Date(startTimes[cellId]);
-    const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
+    const seconds = Math.max(0, Math.floor((new Date(end) - since) / 1000));
 
     await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
       duration_seconds: seconds,
@@ -104,10 +104,11 @@ async function changeCell(cellId){
     });
   }
 
-  /* OPEN NEW STATE WITHOUT SENDING start_time */
+  /* OPEN NEW STATE WITH UTC start_time */
   const row = await api("cell_logs", "POST", {
     cell_id: cellId,
-    color: next
+    color: next,
+    start_time: end
   });
 
   lastLogs[cellId] = row[0].id;

@@ -64,14 +64,6 @@ function toggleFilter(){
 }
 
 /* ======================== */
-function getDayBounds(dateStr){
-  return {
-    from: `${dateStr}T00:00:00.000Z`,
-    to: `${dateStr}T23:59:59.999Z`
-  };
-}
-
-/* ======================== */
 async function queryData(){
 
   const date = datePicker.value;
