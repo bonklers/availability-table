@@ -39,16 +39,22 @@ const LEGEND_TEXT = {
 /* API */
 /* ========================== */
 async function api(endpoint, method="GET", body=null){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`,{
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
     method,
     headers:{
-      apikey:SUPABASE_KEY,
-      Authorization:`Bearer ${SUPABASE_KEY}`,
-      "Content-Type":"application/json",
-      Prefer:"return=representation"
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
     },
-    body: body?JSON.stringify(body):null
+    body: body ? JSON.stringify(body) : null
   });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`API error ${res.status}: ${txt}`);
+  }
+
   return await res.json();
 }
 
@@ -59,19 +65,19 @@ function nextColor(color){
   return COLORS[(COLORS.indexOf(color)+1) % COLORS.length];
 }
 
-function safeUtc(ts){
-  return ts.includes("Z") ? ts : ts + "Z";
+function safeUtc(ts) {
+  return new Date(ts).toISOString();
 }
 
-function getDayBounds(dateStr){
+function getDayBounds(dateStr) {
 
-  // Convert local date → UTC range
-  const localStart = new Date(dateStr + "T00:00:00");
-  const localEnd   = new Date(dateStr + "T23:59:59");
+  // Create local date at midnight
+  const startLocal = new Date(dateStr + "T00:00:00");
+  const endLocal   = new Date(dateStr + "T23:59:59.999");
 
   return {
-    from: localStart.toISOString(),
-    to:   localEnd.toISOString()
+    from: startLocal.toISOString(),   // convert to UTC properly
+    to:   endLocal.toISOString()
   };
 }
 

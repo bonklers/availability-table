@@ -83,8 +83,8 @@ async function queryData(){
   const rows = await api(
     `cell_logs?select=cell_id,duration_seconds`+
     `&color=eq.red` +
-    `&start_time=gte.${from}` +
-    `&start_time=lte.${to}` +
+    `&end_time=gte.${from}` +
+    `&end_time=lte.${to}` +
     `&duration_seconds=${filter}`
   );
 

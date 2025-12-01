@@ -76,10 +76,8 @@ async function loadState(){
   });
 }
 
-function getLocalISO() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, -1); // remove Z so it's local
+function getUtcNow() {
+  return new Date().toISOString();
 }
 
 /* ======================== */
@@ -92,25 +90,28 @@ async function changeCell(cellId){
   if (!cell) return;
 
   const next = nextColor(cell.dataset.color || "green");
-  const now = getLocalISO();
 
+  /* CLOSE PREVIOUS STATE */
   if (lastLogs[cellId]) {
+
+    const end = getUtcNow();
     const since = new Date(startTimes[cellId]);
     const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
 
     await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
-      duration_seconds: seconds
+      duration_seconds: seconds,
+      end_time: end
     });
   }
 
+  /* OPEN NEW STATE WITHOUT SENDING start_time */
   const row = await api("cell_logs", "POST", {
     cell_id: cellId,
-    color: next,
-    start_time: now
+    color: next
   });
 
   lastLogs[cellId] = row[0].id;
-  startTimes[cellId] = now;
+  startTimes[cellId] = row[0].start_time;
 
   cell.className = next;
   cell.dataset.color = next;
