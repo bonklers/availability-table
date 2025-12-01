@@ -73,35 +73,43 @@ function getDayBounds(dateStr){
 /* ========================== */
 /* UNIVERSAL GRID BUILDER */
 /* ========================== */
-function buildGrid(containerId = "grid", enableClicks = false){
+function buildGrid(containerId, clickable = false, mode = "tracker") {
 
   const table = document.getElementById(containerId);
-  if(!table){
-    console.error("Grid container missing:", containerId);
-    return;
-  }
-
   table.innerHTML = "";
+
   let id = 1;
 
-  for(let r=0; r<GRID_ROWS; r++){
+  for (let r = 0; r < 7; r++) {
+
     const tr = document.createElement("tr");
 
-    for(let c=0; c<GRID_COLS; c++){
-      if(id > TOTAL_CELLS) break;
+    for (let c = 0; c < 4; c++) {
+
+      if (id > 28) break;
 
       const td = document.createElement("td");
-      td.dataset.id = id;
 
-      td.innerHTML = `
-        <div>${id}</div>
-        <div class="desc">${LEGEND_TEXT[id]}</div>
-      `;
+      if (mode === "admin") {
+        td.innerHTML = `
+          <div>${id}</div>
+          <div id="c${id}">0</div>
+        `;
+      }
+      else {
+        const num = document.createElement("div");
+        num.innerText = id;
 
-      if(enableClicks){
-        const cellId = id;               // ✅ closure safe
-        td.style.cursor = "pointer";
-        td.onclick = () => changeCell(cellId);
+        const desc = document.createElement("div");
+        desc.className = "desc";
+        desc.innerText = legendText[id] || "";
+
+        td.appendChild(num);
+        td.appendChild(desc);
+
+        if (clickable) {
+          td.onclick = () => changeCell(id);
+        }
       }
 
       tr.appendChild(td);
