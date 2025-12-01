@@ -1,7 +1,7 @@
 /* =======================
    GLOBAL VERSION STRING
 ======================= */
-const VERSION = "v0.10";
+const VERSION = "v0.11";
 
 /* =======================
    APPLY VERSION TO TITLE
@@ -64,9 +64,14 @@ function safeUtc(ts){
 }
 
 function getDayBounds(dateStr){
+
+  // Convert local date → UTC range
+  const localStart = new Date(dateStr + "T00:00:00");
+  const localEnd   = new Date(dateStr + "T23:59:59");
+
   return {
-    from: `${dateStr}T00:00:00.000Z`,
-    to:   `${dateStr}T23:59:59.999Z`
+    from: localStart.toISOString(),
+    to:   localEnd.toISOString()
   };
 }
 
