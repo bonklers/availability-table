@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Admin v0.08</title>
+<title>Admin</title>
 <style>
 body { text-align:center; font-family: Arial; }
 table { margin:auto; border-collapse: collapse; }
@@ -25,14 +25,13 @@ button, input {
 <h2 id="title">Red cells ≥ 10 minutes</h2>
 
 <input type="date" id="datePicker">
-<button id="toggleBtn" onclick="toggleFilter()">Show &lt; 10 minutes</button>
+<button id="toggleBtn">Show < 10 minutes</button>
 
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
 
-const COLORS = { RED:"red" };
 let showShort = false;
 
 /* ======================== */
@@ -45,11 +44,11 @@ function toggleFilter(){
 
   showShort = !showShort;
 
-  document.getElementById("toggleBtn").innerText = showShort
+  toggleBtn.innerText = showShort
     ? "Show ≥ 10 minutes"
     : "Show < 10 minutes";
 
-  document.getElementById("title").innerText = showShort
+  title.innerText = showShort
     ? "Red < 10 minutes"
     : "Red ≥ 10 minutes";
 
@@ -59,4 +58,55 @@ function toggleFilter(){
 /* ======================== */
 function getDayBounds(dateStr){
   return {
-   
+    from: `${dateStr}T00:00:00.000Z`,
+    to: `${dateStr}T23:59:59.999Z`
+  };
+}
+
+/* ======================== */
+async function queryData(){
+
+  const date = datePicker.value;
+  if(!date) return;
+
+  const {from,to} = getDayBounds(date);
+  const filter = showShort ? "lt.600" : "gte.600";
+
+  const rows = await api(
+    `cell_logs?select=cell_id,duration_seconds`+
+    `&color=eq.red` +
+    `&start_time=gte.${from}` +
+    `&start_time=lte.${to}` +
+    `&duration_seconds=${filter}`
+  );
+
+  const count = {};
+  for(let i=1;i<=28;i++) count[i]=0;
+
+  rows.forEach(r => {
+    if(count[r.cell_id] !== undefined)
+      count[r.cell_id]++;
+  });
+
+  for(let i=1;i<=28;i++){
+    const el = document.getElementById("c"+i);
+    if(el) el.innerText = count[i];
+  }
+}
+
+/* ======================== */
+function init(){
+
+  // attach handlers safely
+  toggleBtn.addEventListener("click", toggleFilter);
+  datePicker.addEventListener("change", queryData);
+
+  datePicker.value = new Date().toISOString().split("T")[0];
+  queryData();
+}
+
+init();
+
+</script>
+</body>
+</html>

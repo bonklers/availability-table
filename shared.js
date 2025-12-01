@@ -1,3 +1,17 @@
+/* =======================
+   GLOBAL VERSION STRING
+======================= */
+const VERSION = "v0.09";
+
+/* =======================
+   APPLY VERSION TO TITLE
+======================= */
+(function applyVersionToTitle() {
+  if (typeof VERSION !== "undefined") {
+    document.title = document.title + " " + VERSION;
+  }
+})();
+
 /* ========================== */
 /* SUPABASE CONFIG (SINGLE SOURCE) */
 /* ========================== */
