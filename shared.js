@@ -1,7 +1,7 @@
 /* =======================
    GLOBAL VERSION STRING
 ======================= */
-const VERSION = "v0.13";
+const VERSION = "v0.14";
 
 /* =======================
    APPLY VERSION TO TITLE
@@ -95,25 +95,36 @@ function buildGrid(containerId, clickable = false, mode = "tracker") {
 
       const td = document.createElement("td");
 
+      // ✅ FIX: capture id safely
+      const cellId = id;
+
       if (mode === "admin") {
+
         td.innerHTML = `
-          <div>${id}</div>
-          <div id="c${id}">0</div>
+          <div>${cellId}</div>
+          <div id="c${cellId}">0</div>
         `;
-      }
-      else {
+
+      } else {
+
         const num = document.createElement("div");
-        num.innerText = id;
+        num.innerText = cellId;
 
         const desc = document.createElement("div");
         desc.className = "desc";
-        desc.innerText = LEGEND_TEXT[id] || "";
+        desc.innerText = LEGEND_TEXT[cellId] || "";
 
         td.appendChild(num);
         td.appendChild(desc);
 
         if (clickable) {
-          td.onclick = () => changeCell(id);
+          td.addEventListener("click", () => {
+            if (typeof changeCell === "function") {
+              changeCell(cellId);
+            } else {
+              console.error("changeCell() not defined");
+            }
+          });
         }
       }
 
