@@ -107,7 +107,7 @@ function buildGrid(containerId, clickable = false, mode = "tracker") {
 
         const desc = document.createElement("div");
         desc.className = "desc";
-        desc.innerText = legendText[id] || "";
+        desc.innerText = LEGEND_TEXT[id] || "";
 
         td.appendChild(num);
         td.appendChild(desc);
