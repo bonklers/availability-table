@@ -2,62 +2,58 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Viewer v0.03</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewer v0.08</title>
 <style>
-body { font-family: Arial, sans-serif; text-align:center; }
+body { font-family: Arial; text-align:center; }
 table { margin:auto; border-collapse: collapse; }
 td {
-  width:90px;
-  height:80px;
+  width:70px;
+  height:70px;
   border:1px solid black;
-  text-align:center;
-  vertical-align:middle;
+  font-weight:bold;
 }
-.desc { font-size:12px; }
+.desc { display:none; font-size:12px; }
 .green { background:#9aff9a; }
 .red { background:#ff9a9a; }
 .yellow { background:#ffff9a; }
 </style>
 </head>
-
 <body>
-<h2>Live Viewer</h2>
 
+<h2>Viewer</h2>
+<button onclick="toggleLegend()">Legend</button>
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
 
-const today = new Date().toISOString().slice(0,10);
-
-function getIdCellMap(){
-  return [...document.querySelectorAll("#grid td")]
-         .reduce((m,td)=> (m[td.dataset.id]=td,m),{});
+function toggleLegend(){
+  document.querySelectorAll(".desc")
+    .forEach(d=>d.style.display = d.style.display==="block"?"none":"block");
 }
 
-/* ========================== */
-/* LOAD STATE */
-/* ========================== */
+/* ======================== */
+/* LOAD CURRENT DB STATE */
+/* ======================== */
 async function loadState(){
 
-  const {from,to} = getDayBounds(today);
-  const data = await api(`tracker?changed_at=gte.${from}&changed_at=lte.${to}&order=changed_at.asc`);
+  const rows = await api("cell_logs?select=cell_id,color,start_time&order=start_time.desc");
 
-  const map = getIdCellMap();
+  const cells = document.querySelectorAll("#grid td");
+  const found = {};
 
-  data.forEach(r=>{
-    const cell = map[r.cell_id];
-    if(cell){
-      cell.dataset.color = r.color;
-      cell.className = r.color;
-    }
+  cells.forEach(td=>td.className="green");
+
+  rows.forEach(r => {
+    const cell = cells[r.cell_id - 1];
+    if (!cell || found[r.cell_id]) return;
+
+    cell.className = r.color;
+    found[r.cell_id] = true;
   });
 }
 
-/* ========================== */
-/* INIT */
-/* ========================== */
+/* ======================== */
 buildGrid("grid", false);
 loadState();
 setInterval(loadState, 5000);

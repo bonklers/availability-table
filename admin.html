@@ -1,90 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin v0.07</title>
+<meta charset="UTF-8">
+<title>Admin v0.08</title>
 <style>
 body { text-align:center; font-family: Arial; }
 table { margin:auto; border-collapse: collapse; }
 td {
-  width: 80px;
-  height: 80px;
-  border: 1px solid black;
-  font-weight: bold;
+  width:80px;
+  height:80px;
+  border:1px solid black;
+  font-weight:bold;
+  vertical-align:middle;
 }
-button, input { margin:10px; padding:8px; }
+button, input {
+  margin:10px;
+  padding:8px;
+  font-size:14px;
+}
 </style>
 </head>
 <body>
 
-<h2 id="title">Occupied more than 10 minutes</h2>
+<h2 id="title">Red cells ≥ 10 minutes</h2>
+
 <input type="date" id="datePicker">
-<button id="toggleBtn" onclick="toggleFilter()">Show under 10 min</button>
+<button id="toggleBtn" onclick="toggleFilter()">Show &lt; 10 minutes</button>
 
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
 
+const COLORS = { RED:"red" };
 let showShort = false;
 
-function buildGrid(){
-  const table=document.getElementById("grid");
-  table.innerHTML="";
-  let id=1;
-  for(let r=0;r<GRID_ROWS;r++){
-    let tr=document.createElement("tr");
-    for(let c=0;c<GRID_COLS;c++){
-      let td=document.createElement("td");
-      td.innerHTML = `<div>${id}</div><div id="c${id}">0</div>`;
-      tr.appendChild(td);
-      id++;
-    }
-    table.appendChild(tr);
-  }
-}
+/* ======================== */
+/* BUILD GRID */
+/* ======================== */
+buildGrid("grid", false);
 
+/* ======================== */
 function toggleFilter(){
-  showShort=!showShort;
-  document.getElementById("toggleBtn").innerText = showShort ? 
-    "Show 10+ minutes" : "Show under 10 min";
 
-  document.getElementById("title").innerText = showShort ?
-    "Occupied under 10 minutes" : "Occupied more than 10 minutes";
+  showShort = !showShort;
+
+  document.getElementById("toggleBtn").innerText = showShort
+    ? "Show ≥ 10 minutes"
+    : "Show < 10 minutes";
+
+  document.getElementById("title").innerText = showShort
+    ? "Red < 10 minutes"
+    : "Red ≥ 10 minutes";
 
   queryData();
 }
 
-async function queryData(){
-  const date=document.getElementById("datePicker").value;
-  if(!date) return;
-
-  const bounds = getDayBounds(date);
-  const durationFilter = showShort ? "lt.600" : "gte.600";
-
-  const rows = await api(
-    `cell_logs?select=cell_id,duration_seconds&color=eq.red` +
-    `&start_time=gte.${bounds.from}` +
-    `&start_time=lt.${bounds.to}` +
-    `&duration_seconds=${durationFilter}`
-  );
-
-  let counts={};
-  for(let i=1;i<=TOTAL_CELLS;i++) counts[i]=0;
-  rows.forEach(r=>counts[r.cell_id]++);
-
-  for(let i=1;i<=TOTAL_CELLS;i++){
-    document.getElementById("c"+i).innerText = counts[i];
-  }
-}
-
-(function init(){
-  buildGrid();
-  const today=new Date().toISOString().split("T")[0];
-  datePicker.value=today;
-  datePicker.onchange=queryData;
-  queryData();
-})();
-</script>
-
-</body>
-</html>
+/* ======================== */
+function getDayBounds(dateStr){
+  return {
+   

@@ -2,91 +2,108 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tracker v0.07</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracker v0.08</title>
 <style>
-body { font-family: Arial, sans-serif; text-align:center; }
+body { font-family: Arial; text-align:center; }
 table { margin:auto; border-collapse: collapse; }
 td {
-  width:90px;
-  height:80px;
+  width:70px;
+  height:70px;
   border:1px solid black;
-  text-align:center;
-  vertical-align:middle;
+  font-weight:bold;
+  cursor:pointer;
 }
-.desc { font-size:12px; }
+.desc { display:none; font-size:12px; }
 .green { background:#9aff9a; }
 .red { background:#ff9a9a; }
 .yellow { background:#ffff9a; }
 </style>
 </head>
-
 <body>
-<h2>Daily Tracker</h2>
 
+<h2>Tracker</h2>
+<button onclick="toggleLegend()">Legend</button>
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
 
-const today = new Date().toISOString().slice(0,10);
+let lastLogs = {};
+let startTimes = {};
 
-function getIdCellMap(){
-  return [...document.querySelectorAll("#grid td")]
-         .reduce((m,td)=> (m[td.dataset.id]=td,m),{});
+function toggleLegend(){
+  document.querySelectorAll(".desc")
+    .forEach(d=>d.style.display = d.style.display==="block"?"none":"block");
 }
 
-/* ========================== */
-/* CHANGE CELL COLOR */
-/* ========================== */
-async function changeCell(cellId){
-
-  const map = getIdCellMap();
-  const cell = map[cellId];
-  if(!cell){
-    console.error("Invalid cell:", cellId);
-    return;
-  }
-
-  const current = cell.dataset.color || "green";
-  const next = nextColor(current);
-
-  cell.dataset.color = next;
-  cell.className = next;
-
-  const rec = {
-    cell_id: cellId,
-    color: next,
-    changed_at: new Date().toISOString()
-  };
-
-  await api("tracker", "POST", rec);
-}
-
-
-/* ========================== */
-/* LOAD CURRENT DAY DATA */
-/* ========================== */
+/* ======================== */
+/* LOAD CURRENT DB STATE */
+/* ======================== */
 async function loadState(){
 
-  const {from,to} = getDayBounds(today);
-  const data = await api(`tracker?changed_at=gte.${from}&changed_at=lte.${to}&order=changed_at.asc`);
+  const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
 
-  const map = getIdCellMap();
+  const cells = document.querySelectorAll("#grid td");
+  const found = {};
 
-  data.forEach(r=>{
-    const cell = map[r.cell_id];
-    if(cell){
-      cell.dataset.color = r.color;
-      cell.className = r.color;
-    }
+  cells.forEach(td=>{
+    td.className="green";
+    td.dataset.color="green";
+  });
+
+  lastLogs = {};
+  startTimes = {};
+
+  rows.forEach(r => {
+
+    const cell = cells[r.cell_id - 1];
+    if (!cell || found[r.cell_id]) return;
+
+    cell.className = r.color;
+    cell.dataset.color = r.color;
+
+    lastLogs[r.cell_id] = r.id;
+    startTimes[r.cell_id] = r.start_time;
+
+    found[r.cell_id] = true;
   });
 }
 
+/* ======================== */
+/* HANDLE CLICK */
+/* ======================== */
+async function changeCell(cellId){
 
-/* ========================== */
-/* INIT */
-/* ========================== */
+  const cells = document.querySelectorAll("#grid td");
+  const cell = cells[cellId - 1];
+  if (!cell) return;
+
+  const next = nextColor(cell.dataset.color || "green");
+  const now = new Date().toISOString();
+
+  if (lastLogs[cellId]) {
+    const since = new Date(startTimes[cellId]);
+    const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
+
+    await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
+      duration_seconds: seconds
+    });
+  }
+
+  const row = await api("cell_logs", "POST", {
+    cell_id: cellId,
+    color: next,
+    start_time: now
+  });
+
+  lastLogs[cellId] = row[0].id;
+  startTimes[cellId] = now;
+
+  cell.className = next;
+  cell.dataset.color = next;
+}
+
+/* ======================== */
 buildGrid("grid", true);
 loadState();
 
