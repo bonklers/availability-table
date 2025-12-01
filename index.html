@@ -69,6 +69,12 @@ async function loadState(){
   });
 }
 
+function getLocalISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, -1); // remove Z so it's local
+}
+
 /* ======================== */
 /* HANDLE CLICK */
 /* ======================== */
@@ -79,7 +85,7 @@ async function changeCell(cellId){
   if (!cell) return;
 
   const next = nextColor(cell.dataset.color || "green");
-  const now = new Date().toISOString();
+  const now = getLocalISO();
 
   if (lastLogs[cellId]) {
     const since = new Date(startTimes[cellId]);
