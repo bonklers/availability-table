@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tracker</title>
+<title>Viewer</title>
 <style>
 body { font-family: Arial; text-align:center; }
 table { margin:auto; border-collapse: collapse; }
@@ -11,9 +11,15 @@ td {
   height:70px;
   border:1px solid black;
   font-weight:bold;
-  cursor:pointer;
 }
 .desc { display:none; font-size:12px; }
+
+button {
+  margin: 10px;
+  padding: 8px;
+  font-size: 14px;
+}
+
 .green { background:#9aff9a; }
 .red { background:#ff9a9a; }
 .yellow { background:#ffff9a; }
@@ -21,15 +27,12 @@ td {
 </head>
 <body>
 
-<h2>Tracker</h2>
-<button onclick="toggleLegend()">Legend</button>
+<h2>Viewer</h2>
+<button onclick="toggleLegend()">Descripcion</button>
 <table id="grid"></table>
 
 <script src="shared.js"></script>
 <script>
-
-let lastLogs = {};
-let startTimes = {};
 
 function toggleLegend(){
   document.querySelectorAll(".desc")
@@ -41,77 +44,26 @@ function toggleLegend(){
 /* ======================== */
 async function loadState(){
 
-  const rows = await api("cell_logs?select=cell_id,color,start_time,id&order=start_time.desc");
+  const rows = await api("cell_logs?select=cell_id,color,start_time&order=start_time.desc");
 
   const cells = document.querySelectorAll("#grid td");
   const found = {};
 
-  cells.forEach(td=>{
-    td.className="green";
-    td.dataset.color="green";
-  });
-
-  lastLogs = {};
-  startTimes = {};
+  cells.forEach(td=>td.className="green");
 
   rows.forEach(r => {
-
     const cell = cells[r.cell_id - 1];
     if (!cell || found[r.cell_id]) return;
 
     cell.className = r.color;
-    cell.dataset.color = r.color;
-
-    lastLogs[r.cell_id] = r.id;
-    startTimes[r.cell_id] = r.start_time;
-
     found[r.cell_id] = true;
   });
 }
 
-function getLocalISO() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, -1); // remove Z so it's local
-}
-
 /* ======================== */
-/* HANDLE CLICK */
-/* ======================== */
-async function changeCell(cellId){
-
-  const cells = document.querySelectorAll("#grid td");
-  const cell = cells[cellId - 1];
-  if (!cell) return;
-
-  const next = nextColor(cell.dataset.color || "green");
-  const now = getLocalISO();
-
-  if (lastLogs[cellId]) {
-    const since = new Date(startTimes[cellId]);
-    const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
-
-    await api(`cell_logs?id=eq.${lastLogs[cellId]}`, "PATCH", {
-      duration_seconds: seconds
-    });
-  }
-
-  const row = await api("cell_logs", "POST", {
-    cell_id: cellId,
-    color: next,
-    start_time: now
-  });
-
-  lastLogs[cellId] = row[0].id;
-  startTimes[cellId] = now;
-
-  cell.className = next;
-  cell.dataset.color = next;
-}
-
-/* ======================== */
-buildGrid("grid", true);
+buildGrid("grid", false);
 loadState();
+setInterval(loadState, 5000);
 
 </script>
 </body>

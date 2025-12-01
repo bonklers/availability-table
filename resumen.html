@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Admin</title>
+<title>Resumen</title>
 <style>
 body { text-align:center; font-family: Arial; }
 table { margin:auto; border-collapse: collapse; }
@@ -22,10 +22,10 @@ button, input {
 </head>
 <body>
 
-<h2 id="title">Red cells ≥ 10 minutes</h2>
+<h2 id="title">Ocupados mas de 10 minutos</h2>
 
 <input type="date" id="datePicker">
-<button id="toggleBtn">Show < 10 minutes</button>
+<button id="toggleBtn">Mostrar menos de 10 minutes</button>
 
 <table id="grid"></table>
 
@@ -45,12 +45,12 @@ function toggleFilter(){
   showShort = !showShort;
 
   toggleBtn.innerText = showShort
-    ? "Show ≥ 10 minutes"
-    : "Show < 10 minutes";
+    ? "Mostrar mas de 10 minutes"
+    : "Mostrar menos de 10 minutes";
 
   title.innerText = showShort
-    ? "Red < 10 minutes"
-    : "Red ≥ 10 minutes";
+    ? "Ocupados menos de 10 minutos"
+    : "Ocupados mas de 10 minutos";
 
   queryData();
 }
