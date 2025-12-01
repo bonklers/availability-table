@@ -101,8 +101,14 @@ function init(){
   toggleBtn.addEventListener("click", toggleFilter);
   datePicker.addEventListener("change", queryData);
 
-  datePicker.value = new Date().toISOString().split("T")[0];
+  datePicker.value = getLocalDate();
   queryData();
+}
+
+function getLocalDate() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().split("T")[0];
 }
 
 init();
